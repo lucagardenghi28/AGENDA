@@ -1654,7 +1654,11 @@ const SHORTCUT_NAME = 'Promemoria Agenda';
 function addToCalendar(r){
   if (IS_IOS){
     const title = (r.text || 'Promemoria').replace(/[|\r\n]+/g, ' ').trim().slice(0, 300);
-    const payload = r.at.replace('T', ' ') + '|' + title;
+    // Date first, in the Italian form iOS recognises reliably (gg/mm/aaaa hh:mm), then the title.
+    // The shortcut must read the date ONLY from the first piece, so numbers in the title can't confuse it.
+    const d = remDate(r.at);
+    const when = pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    const payload = when + '|' + title;
     location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent(SHORTCUT_NAME) + '&input=text&text=' + encodeURIComponent(payload);
     return;
   }
