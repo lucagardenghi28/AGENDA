@@ -1,5 +1,5 @@
 // Agenda: keeps the app usable offline. Pages and notes are never cached here (they live in Firebase and on the device).
-const VERSION = 'agenda-v1';
+const VERSION = 'agenda-v2';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

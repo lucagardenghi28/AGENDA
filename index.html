@@ -1630,7 +1630,7 @@ function saveRem(){
   editorChanged(ed, true);
   closeRemDialog();
   const r = { at, text: line.textContent.trim(), id: line.getAttribute('data-remid'), wid: ed.dataset.wid, f: ed.dataset.field };
-  toast('Promemoria salvato.', 'Aggiungi al Calendario', () => addToCalendar(r), 10000);
+  toast('Promemoria salvato.', IS_IOS ? 'Aggiungi a Promemoria' : 'Aggiungi al Calendario', () => addToCalendar(r), 10000);
 }
 function removeRem(){
   if (!remCtx) return;
@@ -1650,16 +1650,15 @@ function buildIcs(r){
     'END:VEVENT', 'END:VCALENDAR'].join('\r\n') + '\r\n';
 }
 const IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const SHORTCUT_NAME = 'Promemoria Agenda';
 function addToCalendar(r){
-  const ics = buildIcs(r);
   if (IS_IOS){
-    const a = document.createElement('a');
-    a.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
-    a.target = '_blank'; a.rel = 'noopener';
-    document.body.appendChild(a); a.click(); a.remove();
+    const title = (r.text || 'Promemoria').replace(/[|\r\n]+/g, ' ').trim().slice(0, 300);
+    const payload = r.at.replace('T', ' ') + '|' + title;
+    location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent(SHORTCUT_NAME) + '&input=text&text=' + encodeURIComponent(payload);
     return;
   }
-  downloadBlob(new Blob([ics], { type: 'text/calendar' }), 'promemoria.ics');
+  downloadBlob(new Blob([buildIcs(r)], { type: 'text/calendar' }), 'promemoria.ics');
 }
 function downloadBlob(blob, name){
   const url = URL.createObjectURL(blob);
@@ -1687,7 +1686,9 @@ function renderRems(){
   const list = $('#rList'); list.textContent = '';
   const now = new Date(); const nowKey = ymd(now) + 'T' + pad(now.getHours()) + ':' + pad(now.getMinutes());
   const up = S.rems.filter(r => r.at >= nowKey), past = S.rems.filter(r => r.at < nowKey).reverse().slice(0, 30);
-  list.appendChild(el('div', 'note', 'L\'agenda ti avvisa all\'ora giusta mentre è aperta. Per un avviso anche ad agenda chiusa tocca Calendario: il promemoria diventa un evento con avviso nel Calendario del telefono.'));
+  list.appendChild(el('div', 'note', IS_IOS
+    ? 'L\'agenda ti avvisa all\'ora giusta mentre è aperta. Per un avviso anche ad agenda chiusa tocca «Invia»: il Comando «' + SHORTCUT_NAME + '» lo aggiunge all\'app Promemoria.'
+    : 'L\'agenda ti avvisa all\'ora giusta mentre è aperta. Per un avviso anche ad agenda chiusa tocca «Calendario» e apri il file scaricato.'));
   if (!S.rems.length){ list.appendChild(el('div', 'empty', 'Nessun promemoria. Scrivi una riga in un giorno, poi tocca la campanella nella barra per scegliere giorno e ora.')); return; }
   const sec = (title, arr, isPast) => {
     if (!arr.length) return;
@@ -1700,7 +1701,7 @@ function renderRems(){
       what.addEventListener('click', () => { closeOv('#remOv'); goWeek(r.wid); openSheet(r.wid, r.f); });
       row.appendChild(what);
       if (!isPast){
-        const b = el('button', 'mini', 'Calendario');
+        const b = el('button', 'mini', IS_IOS ? 'Invia' : 'Calendario');
         b.addEventListener('click', () => addToCalendar(r));
         row.appendChild(b);
         const c = el('button', 'mini', 'Copia');
